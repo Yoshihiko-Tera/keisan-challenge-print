@@ -10,7 +10,7 @@ function update() {
   el('tableRange').hidden = op !== 'multiply';
   el('carryField').hidden = op !== 'add';
   el('borrowField').hidden = el('negativeField').hidden = op !== 'subtract';
-  el('durationField').hidden = form.elements.mode.value !== 'challenge';
+  el('durationField').hidden = false;
   for (const node of form.querySelectorAll('input,select')) {
     node.disabled = false;
     for (let parent = node.parentElement; parent && parent !== form; parent = parent.parentElement)
@@ -67,21 +67,21 @@ function readSettings() {
   return s;
 }
 function view(name) {
-  const childView = ['home','lesson','result'].includes(name);
+  const childView = ['home','lesson','result','childRecordsView'].includes(name);
   document.title = childView ? 'かぞえて とこう！けいさんチャレンジ' : 'けいさんチャレンジ｜先生用';
   document.querySelector('header h1').textContent = childView ? 'けいさんチャレンジ' : 'けいさんチャレンジ｜先生用';
   document.body.dataset.view=name;
-  for (const id of ['home','teacherMenuView','teacherView','recordsView','lesson','result']) el(id).hidden = id !== name;
+  for (const id of ['home','teacherMenuView','teacherView','recordsView','childRecordsView','lesson','result']) el(id).hidden = id !== name;
   el('teacherEntry').hidden = name !== 'home';
   el('teacherBack').hidden = !['teacherView','recordsView'].includes(name);
   el('homeLink').hidden = name === 'home';
   if (name !== 'lesson' && el('leaveLesson').open) el('leaveLesson').close();
-  document.querySelector('footer').hidden = name === 'lesson' || name === 'result';
+  document.querySelector('footer').hidden = name === 'lesson' || name === 'result' || name === 'childRecordsView';
   window.scrollTo(0, 0);
 }
 function home() {
   clearInterval(tick); clearTimeout(advance); session = null;
-  el('homeSummary').textContent = `${symbols[activeSettings.operation]} ${activeSettings.count}問 · ${activeSettings.mode === 'practice' ? '練習モード' : `実践モード ${activeSettings.duration}分`} · ${activeSettings.display === 'support' ? 'サポート表示' : '通常表示'}`;
+  el('homeSummary').textContent = `${symbols[activeSettings.operation]} ${activeSettings.count}問 · チャレンジ ${activeSettings.duration}分 · ${activeSettings.display === 'support' ? 'サポート表示' : '通常表示'}`;
   view('home');
   refreshLearnerSummary();
 }
@@ -294,18 +294,20 @@ function submit() {
     el('retryOptions').hidden = !(session.settings.mode === 'challenge' && session.errors >= 2);
   }
 }
-el('start').onclick = () => {
+function startLesson(mode) {
   el('startError').textContent = '';
   try {
     const questions = importedPrint ? importedPrint.questions.map(p=>({...p,key:p.operation+':'+p.a+':'+p.b})) : generate(activeSettings);
-    const lessonSettings = importedPrint ? {...activeSettings,mode:'practice',count:questions.length,display:importedPrint.type==='support'?'support':'normal'} : activeSettings;
+    const lessonSettings = importedPrint ? {...activeSettings,mode,count:questions.length,display:importedPrint.type==='support'?'support':'normal'} : {...activeSettings,mode};
     if (activeSettings.sound === 'on') { audio ??= new AudioContext(); audio.resume(); }
     refreshLearnerSummary();
     session = { learnerId:selectedLearner, settings: { ...lessonSettings }, questions, answers: [], index: 0, correct: 0, deadline: Date.now() + activeSettings.duration * 60000 };
-    el('modeLabel').textContent = lessonSettings.mode === 'practice' ? '練習モード' : '実践モード';
+    el('modeLabel').textContent = lessonSettings.mode === 'practice' ? 'トレーニング' : 'チャレンジ';
     view('lesson'); renderQuestion(); clock(); tick = setInterval(clock, 100);
   } catch (error) { el('startError').textContent = error.message; }
 };
+el('start').onclick = () => startLesson('practice');
+el('startChallenge').onclick = () => startLesson('challenge');
 el('showAnswer').onclick = () => {
   if (!session || expired()) { if (session) finish(); return; }
   session.revealed = true;
@@ -334,3 +336,19 @@ if(importedPrint) {
 }
 
 window.addEventListener('hashchange',()=>location.reload());
+
+el('childRecordsHome').onclick=home;
+el('openChildRecords').onclick=()=>{
+ view('childRecordsView');el('childRecordList').replaceChildren();el('childRecordStats').hidden=true;el('childRecordName').textContent='';
+ try {
+  const data=readRecords(localStorage),learner=data.learners.find(p=>p.id===selectedLearner);
+  if(!learner){el('childRecordMessage').textContent='せんせいに なまえを えらんでもらってね。';return;}
+  el('childRecordName').textContent=learner.name+' の せいせき';
+  const records=data.records.filter(r=>r.learnerId===learner.id).reverse();
+  el('childRecordMessage').textContent=records.length?'これまでに とけた もんだい':'まだ きろくが ないよ。トレーニングや チャレンジを やってみよう！';
+  if(!records.length)return;
+  el('childRecordStats').hidden=false;
+  el('childRecordStats').textContent='ぜんぶで '+records.reduce((sum,r)=>sum+r.correct,0)+'もん ／ '+records.length+'かい';
+  for(const record of records){const li=document.createElement('li'),date=document.createElement('span'),score=document.createElement('strong');date.textContent=record.date.replace(/-/g,' / ');score.textContent=record.correct+'もん';li.append(date,score);el('childRecordList').append(li);}
+ }catch{el('childRecordMessage').textContent='きろくを よめませんでした。せんせいに つたえてね。';}
+};

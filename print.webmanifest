@@ -1,0 +1,25 @@
+{
+  "id": "./print.html",
+  "name": "百マス計算プリントメーカー",
+  "short_name": "百マスプリント",
+  "lang": "ja",
+  "start_url": "./print.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffcf3",
+  "theme_color": "#177b87",
+  "icons": [
+    {
+      "src": "assets/icon-print-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-print-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

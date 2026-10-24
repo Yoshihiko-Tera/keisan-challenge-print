@@ -1,7 +1,8 @@
+import {challengeUrl} from './site-config.mjs';
 import {parsePrintCode} from './grading-core.mjs';
 export function printLink(data, target, base=location.href) {
  if(target==='teacher') return 'KEISAN-TEACHER:1:'+JSON.stringify(data);
- const url=new URL(target==='child'?'index.html':'print.html',base);
+ const url=new URL(challengeUrl || 'index.html',base);
  url.hash=new URLSearchParams({[target==='child'?'worksheet':'answers']:JSON.stringify(data)}).toString();
  return url.href;
 }

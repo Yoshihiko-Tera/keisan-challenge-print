@@ -1,3 +1,4 @@
+import {paperImage} from './paper-image.mjs';
 import {parsePrintCode} from './grading-core.mjs';
 import {linkedPrint} from './print-link.mjs';
 import {answerImage} from './answer-image.mjs';
@@ -28,7 +29,7 @@ function updatePrintSettings() {
     for (let parent = node.parentElement; parent && parent !== printForm; parent = parent.parentElement)
       if (parent.hidden) node.disabled = true;
   }
-  el('paper').hidden = true; el('printButton').hidden = true;
+  el('paper').hidden = true; el('printButton').hidden = true; el('printImageActions').hidden=true;
   el('printError').textContent = ''; el('printSummary').textContent = '';
 }
 function readPrintSettings() {
@@ -58,11 +59,11 @@ el('makePrint').onclick = () => {
       el('paper').hidden = false;
       drawSupportPages(el('paper'),pages);
     } else { const sheet = generateWorksheet(printSettings); drawWorksheet(el('paper'),sheet); }
-    el('paper').hidden = false; el('printButton').hidden = false;
+    el('paper').hidden = false; el('printButton').hidden = false; setupPrintImages();
   }
   catch(error) { el('paper').hidden = true; el('printError').textContent = error.message; }
 };
-el('printType').onchange = () => { el('paper').hidden=true;el('printButton').hidden=true;el('printError').textContent=''; };
+el('printType').onchange = () => { el('paper').hidden=true;el('printButton').hidden=true;el('printImageActions').hidden=true;el('printError').textContent=''; };
 el('printButton').onclick = () => window.print();
 
 initGrading();
@@ -173,3 +174,18 @@ el('answerQrFile').onchange=async()=>{
 if(new URLSearchParams(location.hash.slice(1)).has('answers')) {
  view('answerReaderView');el('answerQrMessage').textContent='解答は、この画面で先生用QRを読み込んで開きます。';
 }
+
+function printPapers(){return el('paper').classList.contains('support-pages')?[...el('paper').querySelectorAll('.support-paper')]:[el('paper')];}
+let preparedPrintFile=null,printImageVersion=0;
+async function preparePrintImage(){
+ const version=++printImageVersion;preparedPrintFile=null;el('downloadPrintImage').disabled=el('sharePrintImage').disabled=true;el('printImageMessage').textContent='画像を準備しています…';
+ try{const index=Number(el('imagePage').value)||0;const file=new File([await paperImage(printPapers()[index])],'keisan-print-'+(index+1)+'.png',{type:'image/png'});if(version!==printImageVersion)return;preparedPrintFile=file;el('downloadPrintImage').disabled=el('sharePrintImage').disabled=false;el('printImageMessage').textContent='';}catch(e){if(version===printImageVersion)el('printImageMessage').textContent=e.message;}
+}
+el('imagePage').onchange=preparePrintImage;
+function setupPrintImages(){
+ const papers=printPapers();el('imagePage').replaceChildren();papers.forEach((_,i)=>el('imagePage').append(new Option((i+1)+'ページ',String(i))));el('imagePageLabel').hidden=papers.length===1;el('printImageActions').hidden=false;preparePrintImage();
+}
+async function printImageFile(){if(!preparedPrintFile)throw new Error('画像の準備が終わるまでお待ちください。');return preparedPrintFile;}
+function savePrintFile(file){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
+el('downloadPrintImage').onclick=async()=>{try{savePrintFile(await printImageFile());}catch(e){el('printImageMessage').textContent=e.message;}};
+el('sharePrintImage').onclick=async()=>{try{const file=await printImageFile();if(navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'計算プリント'});else el('printImageMessage').textContent='このブラウザーでは画像の直接共有に対応していません。「画像をダウンロード」で保存して共有してください。';}catch(e){if(e.name!=='AbortError')el('printImageMessage').textContent=e.message;}};

@@ -62,7 +62,7 @@ export function drawWorksheet(container, sheet) {
   container.append(meta);
   const table=document.createElement('table'); table.className='calculation-table';
   table.setAttribute('aria-label',`${sheet.count}問の計算表`);
-  table.style.setProperty('--cell-height',`${Math.min(32,186/(sheet.top.length+1))}mm`);
+  table.style.setProperty('--cell-height',`${Math.min(32,170/(sheet.left.length+1))}mm`);
   const head=document.createElement('tr'), corner=document.createElement('th');
   corner.textContent={add:'＋',subtract:'−',multiply:'×'}[sheet.operation]; head.append(corner);
   for(const a of sheet.top){const th=document.createElement('th');th.scope='col';th.textContent=a;head.append(th);}

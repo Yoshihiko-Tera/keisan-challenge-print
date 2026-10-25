@@ -119,3 +119,5 @@ body[data-view=home]{background:#fffcf3}body[data-view=home]::before{content:'';
 .support-paper .paper-meta{font-size:10pt;line-height:1.3;gap:2mm 5mm;margin-bottom:4mm}
 @media print{#paper:not(.support-pages){height:261mm;max-height:261mm}.support-paper{height:261mm}.paper-bottom{break-before:avoid;page-break-before:avoid}#paper .paper-meta{margin-top:0}.print-image-actions{display:none!important}}
 .print-image-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0}.print-image-actions label{min-width:140px}
+
+.about-page .creator-info{margin-top:40px;padding:24px 0 0;border:0;border-top:1px solid #dce4df;border-radius:0;background:transparent}.about-page .creator-info h2{margin-top:0;font-size:21px}.creator-credit{font-size:17px}.creator-info p{margin:12px 0}
